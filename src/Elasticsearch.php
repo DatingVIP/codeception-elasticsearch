@@ -24,6 +24,8 @@ class Elasticsearch extends Module
 
     public function grabFromElasticsearch($index = null, $type = null, $queryString = '*')
     {
+        $this->client->indices()->refresh();
+
         $result = $this->client->search(
             [
                 'index' => $index,
@@ -35,6 +37,23 @@ class Elasticsearch extends Module
 
         return !empty($result['hits']['hits'])
             ? $result['hits']['hits'][0]['_source']
+            : array();
+    }
+
+    public function grabAllFromElasticsearch($index = null, $type = null, $queryString = '*')
+    {
+        $this->client->indices()->refresh();
+
+        $result = $this->client->search(
+            [
+                'index' => $index,
+                'type' => $type,
+                'q' => $queryString,
+            ]
+        );
+
+        return !empty($result['hits']['hits'])
+            ? $result['hits']['hits']
             : array();
     }
 
@@ -76,7 +95,7 @@ class Elasticsearch extends Module
 
         $result = $this->client->search($params);
 
-        return (int) $result['hits']['total'];
+        return (int) $result['hits']['total']['value'];
     }
 
     public function haveInElasticsearch($document)

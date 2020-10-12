@@ -17,9 +17,19 @@ class Elasticsearch extends Module
         $clientBuilder->setHosts($this->_getConfig('hosts'));
         $this->client = $clientBuilder->build();
 
-        if ($this->_getConfig('cleanup')) {
-            $this->client->indices()->delete(['index' => '*']);
+        if ($this->_getConfig('cleanup') !== true) {
+            return;
         }
+
+        $selective = $this->_getConfig('selective');
+        if (!empty($selective) && is_array($selective)) {
+            foreach ($selective as $index) {
+                $this->client->indices()->delete(['index' => $index]);
+            }
+            return;
+        }
+
+        $this->client->indices()->delete(['index' => '*']);
     }
 
     public function grabFromElasticsearch($index = null, $type = null, $queryString = '*')

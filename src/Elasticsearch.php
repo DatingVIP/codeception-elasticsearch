@@ -21,6 +21,19 @@ class Elasticsearch extends Module
             return;
         }
 
+        $this->cleanData();
+
+        //make dummy indexes (to avoid exceptions on checking empy index)
+        $create = $this->_getConfig('create');
+        if (!empty($create) && is_array($create)) {
+            foreach ($create as $index) {
+                $this->client->index(['index' => $index, 'body' => []]);
+            }
+        }
+    }
+
+    private function cleanData()
+    {
         $selective = $this->_getConfig('selective');
         if (!empty($selective) && is_array($selective)) {
             foreach ($selective as $index) {
@@ -50,17 +63,19 @@ class Elasticsearch extends Module
             : array();
     }
 
-    public function grabAllFromElasticsearch($index = null, $type = null, $queryString = '*')
+    public function grabAllFromElasticsearch($index = null, $type = null, $queryString = '')
     {
         $this->client->indices()->refresh();
 
-        $result = $this->client->search(
-            [
+        $params = [
                 'index' => $index,
                 'type' => $type,
-                'q' => $queryString,
-            ]
-        );
+                'size' => 1000
+        ];
+        if (!empty($queryString)) {
+            $params['body'] = ['query' => ['match' => $queryString]];
+        }
+        $result = $this->client->search($params);
 
         return !empty($result['hits']['hits'])
             ? $result['hits']['hits']
